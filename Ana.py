@@ -11,7 +11,6 @@ from tkinter import filedialog
 #   - Reconhecimento de voz
 #   - Criar comando
 #   - Hotkey
-#   - Cliques Seguidos
 #   - Arrastar com o mouse
 #   - Interface Gráfica
 
@@ -20,6 +19,7 @@ class Ana:
         self.nome="Ana"
         self.time = 1
         self.movimentos=[]
+        self.usaArquivo=False
 
     def criarBot(self):
         resposta = win32api.MessageBox(0, 'Você deseja usar comandos salvos em um arquivo?', 'EscolhaAbrirArquivo', win32con.MB_YESNO)
@@ -31,6 +31,7 @@ class Ana:
                     conteudo = conteudo.split('\n')
                     self.movimentos = conteudo
                     win32api.MessageBox(0, 'Aprendizado carregado com sucesso.', 'Salvar aprendizado', 0x00001000)
+                    self.usaArquivo=True
                     self.ativarBot(self.movimentos)
             except FileNotFoundError:
                 print(f'O arquivo "{arquivoComandos}" não foi encontrado.')
@@ -48,7 +49,16 @@ class Ana:
     def clicarMouse(self, x, y, button, pressed):
         if(pressed):
             button=f'{button}'
-            self.movimentos.append(f'Clique(x={x},y={y},b={button[button.find(".")+1:]})')
+            if(len(self.movimentos)==0):
+                self.movimentos.append(f'Clique(x={x},y={y},b={button[button.find(".")+1:]}, n=1)')
+                return
+            ultimoMovimento = self.movimentos[len(self.movimentos)-1]
+            if(ultimoMovimento.find(f'Clique(x={x},y={y},b={button[button.find(".")+1:]}')==0):
+                numero = int(ultimoMovimento[ultimoMovimento.find("n")+2:ultimoMovimento.find(")")])
+                self.movimentos.pop()
+                self.movimentos.append(f'Clique(x={x},y={y},b={button[button.find(".")+1:]}, n={numero+1})')
+            else:    
+                self.movimentos.append(f'Clique(x={x},y={y},b={button[button.find(".")+1:]}, n=1)')
 
     def scrollMouse(self,x, y, dx, dy):
         if(len(self.movimentos)==0):
@@ -67,9 +77,12 @@ class Ana:
 
     def soltarTecla(self,key):
         if key == keyboard.Key.esc:
-            self.mouse_listener.stop()
-            self.keyboard_Listener.stop()
+            self.pararBot()
             self.ativarBot(self.movimentos)
+
+    def pararBot(self):
+        self.mouse_listener.stop()
+        self.keyboard_Listener.stop()
 
     def criarComando(self):
         pass
@@ -86,12 +99,17 @@ class Ana:
             conteudoArquivo+=mov+"\n"
             if(mov[0]=="C"):
                 time.sleep(self.time)
-                if(mov[mov.find("b")+2:mov.find(")")]=="left"):
-                    pyautogui.leftClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
-                elif(mov[mov.find("b")+2:mov.find(")")]=="right"):
-                    pyautogui.rightClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
-                elif(mov[mov.find("b")+2:mov.find(")")]=="middle"):
-                    pyautogui.middleClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
+                numero = int(mov[mov.find("n")+2:mov.find(")")])
+                botao = mov[mov.find("b")+2:mov.find("n")-2]
+                print(mov)
+                for i in range(numero):
+                    if(botao=="left"):
+                        pyautogui.leftClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
+                    elif(botao=="right"):
+                        pyautogui.rightClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
+                    elif(botao=="middle"):
+                        pyautogui.middleClick(int(mov[mov.find("x")+2:mov.find(",")]),int(mov[mov.find("y")+2:mov.find("b")-1]))
+                    time.sleep(0.1)
             elif(mov[0]=="T"):
                 time.sleep(self.time)
                 if('Key.' in mov):
@@ -108,6 +126,8 @@ class Ana:
                 n=int(mov[mov.find("n")+2:mov.find(")")])
                 control.scroll(0,d*n)
         time.sleep(self.time/2)
+        if(self.usaArquivo==False):
+            self.pararBot()
         win32api.MessageBox(0, 'O bot terminou sua tarefa.', 'Finalização do bot', 0x00001000)
         resposta = win32api.MessageBox(0, 'Você deseja salvar o aprendizado do bot em arquivo?', 'EscolhaSalvarArquivo', win32con.MB_YESNO)
         if resposta == win32con.IDYES:
