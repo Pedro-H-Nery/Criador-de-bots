@@ -7,6 +7,14 @@ import win32api
 import win32con
 from tkinter import filedialog
 
+#Faltando:
+#   - Reconhecimento de voz
+#   - Criar comando
+#   - Hotkey
+#   - Cliques Seguidos
+#   - Arrastar com o mouse
+#   - Interface Gráfica
+
 class Ana:
     def __init__(self):
         self.nome="Ana"
@@ -21,7 +29,6 @@ class Ana:
                 with open(arquivoComandos, 'r') as arquivo:
                     conteudo = arquivo.read()
                     conteudo = conteudo.split('\n')
-                    conteudo.pop()
                     self.movimentos = conteudo
                     win32api.MessageBox(0, 'Aprendizado carregado com sucesso.', 'Salvar aprendizado', 0x00001000)
                     self.ativarBot(self.movimentos)
@@ -74,7 +81,7 @@ class Ana:
         win32api.MessageBox(0, 'Agora o bot repetirá os cliques.', 'Iniciação do bot', 0x00001000)
         conteudoArquivo=""
         for mov in movimentos:
-            if(mov=="Tecla(Key.esc)"):
+            if(mov=="Tecla(Key.esc)" or mov==''):
                 break
             conteudoArquivo+=mov+"\n"
             if(mov[0]=="C"):
